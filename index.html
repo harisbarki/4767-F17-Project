@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<meta name="generator" content="ReText 5.3.1">
+	<title>4767 F17 Project</title>
+
+	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
+	<style type="text/css">
+		
+	</style>
+</head>
+
+<body>
+
+	<div id="submission info">
+		<em>
+			<p>Author: Haris Barki
+				<br>Last Modified:
+				<script type="text/javascript">
+					document.write(document.lastModified);
+				</script>
+			</p>
+		</em>
+	</div>
+
+	<script type="text/javascript">
+
+		//Function for converting CSV values from strings to Dates and numbers
+		var rowConverter = function (d) {
+			return {
+				tickerSymbol: d["Ticker Symbol"],
+				periodEnding: parseFloat(d["Period Ending"]),
+				accountsPayable: parseFloat(d["Accounts Payable"]),
+				accountsReceivable: parseFloat(d["Accounts Receivable"]),
+				addIncomeExpenseItems: parseFloat(d["Add'l income/expense items"]),
+				afterTaxROE: parseFloat(d["After Tax ROE"]),
+				capitalExpenditures: parseFloat(d["Capital Expenditures"]),
+				capitalSurplus: parseFloat(d["Capital Surplus"]),
+				cashRatio: parseFloat(d["Cash Ratio"]),
+				cashAndCashEquivalents: parseFloat(d["Cash and Cash Equivalents"]),
+				changesInInventories: parseFloat(d["Changes in Inventories"]),
+				commonStocks: parseFloat(d["Common Stocks"]),
+				costOfRevenue: parseFloat(d["Cost of Revenue"]),
+				currentRatio: parseFloat(d["Current Ratio"]),
+				deferredAssetCharges: parseFloat(d["Deferred Asset Charges"]),
+				deferredLiabilityCharges: parseFloat(d["Deferred Liability Charges"]),
+				depreciation: parseFloat(d["Depreciation"]),
+				earningsBeforeInterestAndTax: parseFloat(d["Earnings Before Interest and Tax"]),
+				earningsBeforeTax: parseFloat(d["Earnings Before Tax"]),
+				effectOfExchangeRate: parseFloat(d["Effect of Exchange Rate"]),
+				equityEarningsLossUnconsolidatedSubsidiary: parseFloat(d["Equity Earnings/Loss Unconsolidated Subsidiary"]),
+				fixedAssets: parseFloat(d["Fixed Assets"]),
+				goodwill: parseFloat(d["Goodwill"]),
+				grossMargin: parseFloat(d["Gross Margin"]),
+				grossProfit: parseFloat(d["Gross Profit"]),
+				incomeTax: parseFloat(d["Income Tax"]),
+				intangibleAssets: parseFloat(d["Intangible Assets"]),
+				interestExpense: parseFloat(d["Interest Expense"]),
+				inventory: parseFloat(d["Inventory"]),
+				investments: parseFloat(d["Investments"]),
+				liabilities: parseFloat(d["Liabilities"]),
+				longTermDebt: parseFloat(d["Long-Term Debt"]),
+				longTermInvestments: parseFloat(d["Long-Term Investments"]),
+				minorityInterest: parseFloat(d["Minority Interest"]),
+				miscStocks: parseFloat(d["Misc. Stocks"]),
+				netBorrowings: parseFloat(d["Net Borrowings"]),
+				netCashFlow: parseFloat(d["Net Cash Flow"]),
+				netCashFlowOperating: parseFloat(d["Net Cash Flow-Operating"]),
+				netCashFlowsFinancing: parseFloat(d["Net Cash Flows-Financing"]),
+				netCashFlowsInvesting: parseFloat(d["Net Cash Flows-Investing"]),
+				netIncome: parseFloat(d["Net Income"]),
+				netIncomeAdjustments: parseFloat(d["Net Income Adjustments"]),
+				netIncomeApplicableToCommonShareholders: parseFloat(d["Net Income Applicable to Common Shareholders"]),
+				netIncomeContOperations: parseFloat(d["Net Income-Cont. Operations"]),
+				netReceivables: parseFloat(d["Net Receivables"]),
+				nonRecurringItems: parseFloat(d["Non-Recurring Items"]),
+				operatingIncome: parseFloat(d["Operating Income"]),
+				operatingMargin: parseFloat(d["Operating Margin"]),
+				otherAssets: parseFloat(d["Other Assets"]),
+				otherCurrentAssets: parseFloat(d["Other Current Assets"]),
+				otherCurrentLiabilities: parseFloat(d["Other Current Liabilities"]),
+				otherEquity: parseFloat(d["Other Equity"]),
+				otherFinancingActivities: parseFloat(d["Other Financing Activities"]),
+				otherInvestingActivities: parseFloat(d["Other Investing Activities"]),
+				otherLiabilities: parseFloat(d["Other Liabilities"]),
+				otherOperatingActivities: parseFloat(d["Other Operating Activities"]),
+				otherOperatingItems: parseFloat(d["Other Operating Items"]),
+				preTaxMargin: parseFloat(d["Pre-Tax Margin"]),
+				preTaxROE: parseFloat(d["Pre-Tax ROE"]),
+				profitMargin: parseFloat(d["Profit Margin"]),
+				quickRatio: parseFloat(d["Quick Ratio"]),
+				researchAndDevelopment: parseFloat(d["Research and Development"]),
+				retainedEarnings: parseFloat(d["Retained Earnings"]),
+				saleAndPurchaseOfStock: parseFloat(d["Sale and Purchase of Stock"]),
+				salesGeneralAndAdmin: parseFloat(d["Sales, General and Admin."]),
+				shortTermDebtCurrentPortionOfLongTermDebt: parseFloat(d["Short-Term Debt / Current Portion of Long-Term Debt"]),
+				shortTermInvestments: parseFloat(d["Short-Term Investments"]),
+				totalAssets: parseFloat(d["Total Assets"]),
+				totalCurrentAssets: parseFloat(d["Total Current Assets"]),
+				totalCurrentLiabilities: parseFloat(d["Total Current Liabilities"]),
+				totalEquity: parseFloat(d["Total Equity"]),
+				totalLiabilities: parseFloat(d["Total Liabilities"]),
+				totalLiabilitiesAndEquity: parseFloat(d["Total Liabilities & Equity"]),
+				totalRevenue: parseFloat(d["Total Revenue"]),
+				treasuryStock: parseFloat(d["Treasury Stock"]),
+				forYear: parseFloat(d["For Year"]),
+				earningsPerShare: parseFloat(d["Earnings Per Share"]),
+				estimatedSharesOutstanding: parseFloat(d["Estimated Shares Outstanding"])
+			};
+		}
+
+		d3.csv("fundamentals.csv", rowConverter,function(data){
+			console.log(data);
+		});
+
+	</script>
+
+</body>
+
+</html>
