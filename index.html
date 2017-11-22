@@ -6,114 +6,513 @@
 	<meta name="generator" content="ReText 5.3.1">
 	<title>4767 F17 Project</title>
 
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+
+	<!-- Required for bootstrap -->
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	 crossorigin="anonymous"></script>
+
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
 	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
 	<style type="text/css">
-		
+		/* CSS for the legend */
+
+		.legend {
+			font: 10px arial, sans-serif;
+		}
+
+		.legend-rect {
+			stroke-width: 1;
+			fill: LightGrey;
+			stroke: black;
+			opacity: 0.5;
+		}
+
+		.line {
+			fill: none;
+			stroke: #000;
+			stroke-width: 2px;
+		}
+
+		.side-menu {
+			min-height: calc(100vh - 134px);
+			background-color: #455A64;
+			color: white;
+		}
 	</style>
 </head>
 
-<body>
+<body style="background-color: #FAFAFA">
 
-	<div id="submission info">
-		<em>
-			<p>Author: Haris Barki
-				<br>Last Modified:
-				<script type="text/javascript">
-					document.write(document.lastModified);
-				</script>
-			</p>
-		</em>
+
+	<div class="container-fluid" style="background-color: #009688; color: antiquewhite; -webkit-box-shadow: 0px 10px 36px -9px rgba(0,0,0,0.33); -moz-box-shadow: 0px 10px 36px -9px rgba(0,0,0,0.33); box-shadow: 0px 10px 36px -9px rgba(0,0,0,0.33);">
+		<div class="row">
+			<div class="col-md-12" align="center">
+				<div id="submission info" style="padding: 8px 0 0 16px;">
+					<em>
+						<h3>
+							<strong>CS4767 - Fall 2017 Project</strong>
+						</h3>
+						<p>Author: Haris Barki
+							<br>Last Modified:
+							<script type="text/javascript">
+								document.write(document.lastModified);
+							</script>
+						</p>
+						<br>
+					</em>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-3 col-md-2 side-menu">
+				<div class="row">
+					<div class="col-md-12">
+						<h4>
+							<strong>Select Ratios:</strong>
+						</h4>
+						<div class="checkbox">
+							<label>
+								<input class="ratios" type="checkbox" value="currentRatio" checked> Current Ratio
+							</label>
+							<br>
+							<label>
+								<input class="ratios" type="checkbox" value="cashRatio"> Cash Ratio
+							</label>
+							<br>
+							<label>
+								<input class="ratios" type="checkbox" value="quickRatio"> Quick Ratio
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12">
+						<h4>
+							<strong>Select company to add to the list for comparing</strong>
+						</h4>
+					</div>
+					<div class="col-md-12">
+						<select class="form-control" id="tickerSymbolSelect">
+							<option value=""></option>
+						</select>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12" class="table-responsive">
+						<table class="table table-condensed" id="selectedTickerSymbolsTable" style="color: white">
+							<thead>
+								<tr>
+									<th style='width: 66px'></th>
+									<th>TickerSymbol</th>
+								</tr>
+							</thead>
+							<tbody id="selectedTickerSymbolsTableBody">
+								<!-- automatic insertion -->
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+			</div>
+			<div class="col-sm-9 col-md-10">
+				<div id="graphArea"></div>
+			</div>
+		</div>
 	</div>
 
 	<script type="text/javascript">
 
-		//Function for converting CSV values from strings to Dates and numbers
+		// Width and height
+		var w = 700;
+		var h = 500;
+		var padding = 50;
+
+		var data, data_skimmed, nestedData, dataset, xScale, yScale, xAxis, yAxis;  //Empty, for now
+
+		//For converting strings to Dates
+		var parseTime = d3.timeParse("%d-%m-%y");
+
+		// For converting the dates in the dataset
+		var startOfTheYearDate = new Date();
+		startOfTheYearDate.setHours(0, 0, 0, 0);
+		startOfTheYearDate.setMonth(0);
+		startOfTheYearDate.setDate(1);
+
+		getLocalStorageTickerSymbols = () => {
+			var tickerSymbols = JSON.parse(localStorage.getItem('selectedTickerSymbols'));
+			tickerSymbols = tickerSymbols ? tickerSymbols : [];
+			return tickerSymbols;
+		}
+
+		setLocalStorageTickerSymbols = (tickerSymbols) => {
+			localStorage.setItem('selectedTickerSymbols', JSON.stringify(tickerSymbols));
+		}
+
+		getLocalStorageRatios = () => {
+			var tickerSymbols = JSON.parse(localStorage.getItem('selectedRatios'));
+			tickerSymbols = tickerSymbols ? tickerSymbols : [];
+			return tickerSymbols;
+		}
+
+		setLocalStorageRatios = (ratios) => {
+			localStorage.setItem('selectedRatios', JSON.stringify(ratios));
+		}
+
+		$('.ratios').on('change', function () {
+			var ratios = [];
+			$('.ratios[type=checkbox]:checked').map(function (_, el) {
+				ratios.push($(el).val());
+			}).get();
+			setLocalStorageRatios(ratios);
+			makeGraphs();
+		});
+
+		var updateTable = function () {
+			$('#selectedTickerSymbolsTableBody').html('');
+			var list = getLocalStorageTickerSymbols();
+			console.log(list);
+			for (var i = 0; i < list.length; i++) {
+				$('#selectedTickerSymbolsTableBody').append('<tr class="child"><td><button style="width: 25px" class="btn btn-danger btn-xs delete-btn"><span class="glyphicon glyphicon-remove"></span></button></td><td>' + list[i] + '</td></tr>');
+			}
+
+			$('#selectedTickerSymbolsTableBody').find('tr .delete-btn').click(function () {
+				var tickerSymbol = $(this).parent().parent().find('td:eq(1)').text();
+				removeTickerSymbol(tickerSymbol);
+			});
+		}
+
+		var addTickerSymbol = function (tickerSymbol) {
+			var list = getLocalStorageTickerSymbols();
+			var alreadyExists = false;
+			for (var i = 0; i < list.length; i++) {
+				if (list[i] == tickerSymbol) {
+					alreadyExists = true;
+					console.log('Ticker Symbol already exists', tickerSymbol);
+					break;
+				}
+			}
+			if (!alreadyExists) {
+				console.log('Ticker Symbol adding', tickerSymbol);
+				list.push(tickerSymbol);
+				list.sort();
+				setLocalStorageTickerSymbols(list);
+				updateTable();
+				makeGraphs();
+			}
+		}
+
+		var removeTickerSymbol = function (tickerSymbol) {
+			var list = getLocalStorageTickerSymbols();
+			for (var i = 0; i < list.length; i++) {
+				if (list[i] == tickerSymbol) {
+					list.splice(i, 1);
+				}
+			}
+			setLocalStorageTickerSymbols(list);
+			updateTable();
+			makeGraphs();
+		}
+
+
+		$('#tickerSymbolSelect').on('change', function () {
+			var tickerSymbolSelected = this.value;
+			if (tickerSymbolSelected) {
+				addTickerSymbol(tickerSymbolSelected);
+			}
+			$(".tickerSymbolSelect").val('');
+		})
+
+		var makeGraphs = () => {
+			$('#graphArea').html('');
+			var tickerSymbols = getLocalStorageTickerSymbols();
+			var ratiosToBeDrawn = getLocalStorageRatios();
+
+			data_skimmed = [];
+			for (var i = 0; i < data.length; i++) {
+				for (var j = 0; j < tickerSymbols.length; j++) {
+					if (data[i].tickerSymbol == tickerSymbols[j]) {
+						data_skimmed.push(data[i]);
+					}
+				}
+			}
+			for (var i = 0; i < ratiosToBeDrawn.length; i++) {
+				drawData(data_skimmed, ratiosToBeDrawn[i]);
+			}
+		}
+
+		var drawData = (data, ratioToBeDrawn) => {
+			var dataToBeDrawn = [];
+			for (var i = 0; i < data.length; i++) {
+				if (!data[i][ratioToBeDrawn]) {
+					data.splice(i, 1);
+					i--;
+				} else {
+					dataToBeDrawn.push(data[i]);
+				}
+			}
+
+			if (dataToBeDrawn.length < 1) {
+				return null;
+			}
+
+			// Nested data
+			nestedData = d3.nest().key(function (d) { return d.tickerSymbol })
+				.entries(dataToBeDrawn);
+
+			console.log('dataToBeDrawn', dataToBeDrawn);
+			console.log('nestedData', nestedData);
+			console.log('ratio', ratioToBeDrawn);
+
+			// Create scale functions
+			xScale = d3.scaleTime()
+				.domain(d3.extent(dataToBeDrawn, function (d) { return d.forYear; }))
+				.range([padding, w - padding]);
+
+			yScale = d3.scaleLinear()
+				.domain(d3.extent(dataToBeDrawn, function (d) { return d[ratioToBeDrawn]; }))
+				.range([h - padding, padding]);
+
+			// Define X axis
+			xAxis = d3.axisBottom().scale(xScale).ticks(d3.timeYear.every(1));
+
+			// Define Y axis
+			yAxis = d3.axisLeft().scale(yScale);
+
+			// Note an ordinal scale can have an implicit domain
+			var symbolScale = d3.scaleOrdinal(d3.symbols);
+
+			// Note an ordinal scale can have an implicit domain
+			// using colors as a domain
+			var colorScale = d3.scaleOrdinal(d3.schemeCategory20);
+
+			var lineGen = d3.line()
+				.x(function (d) { return xScale(d.forYear) })
+				.y(function (d) {
+					if (d[ratioToBeDrawn]) {
+						return yScale(d[ratioToBeDrawn])
+					} else {
+						return yScale(null);
+					};
+				});
+
+			// Create SVG element
+			var svg = d3.select("#graphArea")
+				.append("svg")
+				.attr("width", w)
+				.attr("height", h);
+
+			// Generate lines
+			var lines = svg.selectAll("path")
+				.data(nestedData)
+				.enter()
+				.append("path")
+				.attr("class", "line")
+				.style("stroke", function (d) { return colorScale(d.key); })
+				.attr("d", function (d) { return lineGen(d.values) });
+
+			lines
+				.append("title")
+				.text(function (d) {
+					return d.key;
+				});
+
+			//Create X axis
+			var gX = svg.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(0," + (h - padding) + ")")
+				.call(xAxis);
+
+			//Create Y axis
+			var gY = svg.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + ",0)")
+				.call(yAxis);
+
+			// //generate symbols
+			// var maxTempPoints = svg.selectAll(ratioToBeDrawn)
+			// 	.data(dataToBeDrawn)
+			// 	.enter()
+			// 	.append("path")
+			// 	.attr("fill", function (d) { return colorScale(d.tickerSymbol); })
+			// 	.attr("d", function (d) {
+			// 		return (d3.symbol().type(symbolScale(ratioToBeDrawn)).size(10))();	// TODO make a slider in frontend
+			// 	})
+			// 	.attr("transform", function (d) { return "translate(" + xScale(d.forYear) + "," + yScale(d[ratioToBeDrawn]) + ")"; });
+
+			// maxTempPoints
+			// 	.append("title")
+			// 	.text(function (d) {
+			// 		return d.tickerSymbol;
+			// 	});
+
+			function myzoomer() {
+				nxScale = d3.event.transform.rescaleX(xScale);
+				nyScale = d3.event.transform.rescaleY(yScale);
+				gX.call(xAxis.scale(nxScale));
+				gY.call(yAxis.scale(nyScale));
+
+				// maxTempPoints
+				// 	.transition()
+				// 	.duration(500)
+				// 	.attr("d", function (d) {
+				// 		return (d3.symbol().type(symbolScale(ratioToBeDrawn)).size(10))();
+				// 	})
+				// 	.attr("transform", function (d) {
+				// 		return "translate(" + nxScale(d.forYear) + "," + nyScale(d[ratioToBeDrawn]) + ")";
+				// 	});
+
+				lines
+					.transition()
+					.duration(500)
+					.attr("transform", d3.event.transform);
+			};
+			var zoomfuncObj = d3.zoom().on("zoom", myzoomer);
+			svg.call(zoomfuncObj);
+
+			// A simple legend based on an ordinal scale
+			var legend = svg.append("g")
+				.attr("class", "legend")
+				.attr("transform", "translate(" + (padding + 20) + "," + (padding) + ")");
+			legend.append("rect")
+				.attr("id", "legend-rectangle")
+				.attr("class", "legend-rect")
+				.attr("width", "90")
+				.attr("height", 15 + ((dataToBeDrawn.length + 1) * 2.9));
+			var legendgroups = legend.selectAll("g")
+				.data(nestedData)
+				.enter()
+				.append("g")
+				.attr("transform", function (d, i) {
+					return "translate(" + 10 + "," + (i + 1) * 11 + ")";
+				});
+			legendgroups.append("text")
+				.text(function (d) { return d.key })
+				.attr("x", 8)
+				.attr("y", 6);
+			legendgroups.append("rect")
+				.attr("fill", function (d) { return colorScale(d.key); })
+				.attr("height", 6)
+				.attr("width", 6);
+
+			svg.append("text")
+				.attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+				.attr("transform", "translate(" + (w / 2) + ",30" + ")")  // text is drawn off the screen top left, move down and out and rotate
+				.attr("font-weight", "bold")  // This makes it bold
+				.attr("font-size", "x-large")  // This makes it bigger in size
+				.text(ratioToBeDrawn);
+		}
+
+		// Function for converting CSV values from strings to Dates and numbers
 		var rowConverter = function (d) {
 			return {
-				tickerSymbol: d["Ticker Symbol"],
-				periodEnding: parseFloat(d["Period Ending"]),
-				accountsPayable: parseFloat(d["Accounts Payable"]),
-				accountsReceivable: parseFloat(d["Accounts Receivable"]),
-				addIncomeExpenseItems: parseFloat(d["Add'l income/expense items"]),
-				afterTaxROE: parseFloat(d["After Tax ROE"]),
-				capitalExpenditures: parseFloat(d["Capital Expenditures"]),
-				capitalSurplus: parseFloat(d["Capital Surplus"]),
-				cashRatio: parseFloat(d["Cash Ratio"]),
-				cashAndCashEquivalents: parseFloat(d["Cash and Cash Equivalents"]),
-				changesInInventories: parseFloat(d["Changes in Inventories"]),
-				commonStocks: parseFloat(d["Common Stocks"]),
-				costOfRevenue: parseFloat(d["Cost of Revenue"]),
-				currentRatio: parseFloat(d["Current Ratio"]),
-				deferredAssetCharges: parseFloat(d["Deferred Asset Charges"]),
-				deferredLiabilityCharges: parseFloat(d["Deferred Liability Charges"]),
-				depreciation: parseFloat(d["Depreciation"]),
-				earningsBeforeInterestAndTax: parseFloat(d["Earnings Before Interest and Tax"]),
-				earningsBeforeTax: parseFloat(d["Earnings Before Tax"]),
-				effectOfExchangeRate: parseFloat(d["Effect of Exchange Rate"]),
-				equityEarningsLossUnconsolidatedSubsidiary: parseFloat(d["Equity Earnings/Loss Unconsolidated Subsidiary"]),
-				fixedAssets: parseFloat(d["Fixed Assets"]),
-				goodwill: parseFloat(d["Goodwill"]),
-				grossMargin: parseFloat(d["Gross Margin"]),
-				grossProfit: parseFloat(d["Gross Profit"]),
-				incomeTax: parseFloat(d["Income Tax"]),
-				intangibleAssets: parseFloat(d["Intangible Assets"]),
-				interestExpense: parseFloat(d["Interest Expense"]),
-				inventory: parseFloat(d["Inventory"]),
-				investments: parseFloat(d["Investments"]),
-				liabilities: parseFloat(d["Liabilities"]),
-				longTermDebt: parseFloat(d["Long-Term Debt"]),
-				longTermInvestments: parseFloat(d["Long-Term Investments"]),
-				minorityInterest: parseFloat(d["Minority Interest"]),
-				miscStocks: parseFloat(d["Misc. Stocks"]),
-				netBorrowings: parseFloat(d["Net Borrowings"]),
-				netCashFlow: parseFloat(d["Net Cash Flow"]),
-				netCashFlowOperating: parseFloat(d["Net Cash Flow-Operating"]),
-				netCashFlowsFinancing: parseFloat(d["Net Cash Flows-Financing"]),
-				netCashFlowsInvesting: parseFloat(d["Net Cash Flows-Investing"]),
-				netIncome: parseFloat(d["Net Income"]),
-				netIncomeAdjustments: parseFloat(d["Net Income Adjustments"]),
-				netIncomeApplicableToCommonShareholders: parseFloat(d["Net Income Applicable to Common Shareholders"]),
-				netIncomeContOperations: parseFloat(d["Net Income-Cont. Operations"]),
-				netReceivables: parseFloat(d["Net Receivables"]),
-				nonRecurringItems: parseFloat(d["Non-Recurring Items"]),
-				operatingIncome: parseFloat(d["Operating Income"]),
-				operatingMargin: parseFloat(d["Operating Margin"]),
-				otherAssets: parseFloat(d["Other Assets"]),
-				otherCurrentAssets: parseFloat(d["Other Current Assets"]),
-				otherCurrentLiabilities: parseFloat(d["Other Current Liabilities"]),
-				otherEquity: parseFloat(d["Other Equity"]),
-				otherFinancingActivities: parseFloat(d["Other Financing Activities"]),
-				otherInvestingActivities: parseFloat(d["Other Investing Activities"]),
-				otherLiabilities: parseFloat(d["Other Liabilities"]),
-				otherOperatingActivities: parseFloat(d["Other Operating Activities"]),
-				otherOperatingItems: parseFloat(d["Other Operating Items"]),
-				preTaxMargin: parseFloat(d["Pre-Tax Margin"]),
-				preTaxROE: parseFloat(d["Pre-Tax ROE"]),
-				profitMargin: parseFloat(d["Profit Margin"]),
-				quickRatio: parseFloat(d["Quick Ratio"]),
-				researchAndDevelopment: parseFloat(d["Research and Development"]),
-				retainedEarnings: parseFloat(d["Retained Earnings"]),
-				saleAndPurchaseOfStock: parseFloat(d["Sale and Purchase of Stock"]),
-				salesGeneralAndAdmin: parseFloat(d["Sales, General and Admin."]),
-				shortTermDebtCurrentPortionOfLongTermDebt: parseFloat(d["Short-Term Debt / Current Portion of Long-Term Debt"]),
-				shortTermInvestments: parseFloat(d["Short-Term Investments"]),
-				totalAssets: parseFloat(d["Total Assets"]),
-				totalCurrentAssets: parseFloat(d["Total Current Assets"]),
-				totalCurrentLiabilities: parseFloat(d["Total Current Liabilities"]),
-				totalEquity: parseFloat(d["Total Equity"]),
-				totalLiabilities: parseFloat(d["Total Liabilities"]),
-				totalLiabilitiesAndEquity: parseFloat(d["Total Liabilities & Equity"]),
-				totalRevenue: parseFloat(d["Total Revenue"]),
-				treasuryStock: parseFloat(d["Treasury Stock"]),
-				forYear: parseFloat(d["For Year"]),
-				earningsPerShare: parseFloat(d["Earnings Per Share"]),
-				estimatedSharesOutstanding: parseFloat(d["Estimated Shares Outstanding"])
+				tickerSymbol: d["Ticker Symbol"] ? d["Ticker Symbol"] : null,
+				periodEnding: d["Period Ending"] ? new Date(parseTime(d["Period Ending"])) : null,
+				accountsPayable: d["Accounts Payable"] ? parseFloat(d["Accounts Payable"]) : null,
+				accountsReceivable: d["Accounts Receivable"] ? parseFloat(d["Accounts Receivable"]) : null,
+				addIncomeExpenseItems: d["Add'l income/expense items"] ? parseFloat(d["Add'l income/expense items"]) : null,
+				afterTaxROE: d["After Tax ROE"] ? parseFloat(d["After Tax ROE"]) : null,
+				capitalExpenditures: d["Capital Expenditures"] ? parseFloat(d["Capital Expenditures"]) : null,
+				capitalSurplus: d["Capital Surplus"] ? parseFloat(d["Capital Surplus"]) : null,
+				cashRatio: d["Cash Ratio"] ? parseFloat(d["Cash Ratio"]) : null,
+				cashAndCashEquivalents: d["Cash and Cash Equivalents"] ? parseFloat(d["Cash and Cash Equivalents"]) : null,
+				changesInInventories: d["Changes in Inventories"] ? parseFloat(d["Changes in Inventories"]) : null,
+				commonStocks: d["Common Stocks"] ? parseFloat(d["Common Stocks"]) : null,
+				costOfRevenue: d["Cost of Revenue"] ? parseFloat(d["Cost of Revenue"]) : null,
+				currentRatio: d["Current Ratio"] ? parseFloat(d["Current Ratio"]) : null,
+				deferredAssetCharges: d["Deferred Asset Charges"] ? parseFloat(d["Deferred Asset Charges"]) : null,
+				deferredLiabilityCharges: d["Deferred Liability Charges"] ? parseFloat(d["Deferred Liability Charges"]) : null,
+				depreciation: d["Depreciation"] ? parseFloat(d["Depreciation"]) : null,
+				earningsBeforeInterestAndTax: d["Earnings Before Interest and Tax"] ? parseFloat(d["Earnings Before Interest and Tax"]) : null,
+				earningsBeforeTax: d["Earnings Before Tax"] ? parseFloat(d["Earnings Before Tax"]) : null,
+				effectOfExchangeRate: d["Effect of Exchange Rate"] ? parseFloat(d["Effect of Exchange Rate"]) : null,
+				equityEarningsLossUnconsolidatedSubsidiary: d["Equity Earnings/Loss Unconsolidated Subsidiary"] ? parseFloat(d["Equity Earnings/Loss Unconsolidated Subsidiary"]) : null,
+				fixedAssets: d["Fixed Assets"] ? parseFloat(d["Fixed Assets"]) : null,
+				goodwill: d["Goodwill"] ? parseFloat(d["Goodwill"]) : null,
+				grossMargin: d["Gross Margin"] ? parseFloat(d["Gross Margin"]) : null,
+				grossProfit: d["Gross Profit"] ? parseFloat(d["Gross Profit"]) : null,
+				incomeTax: d["Income Tax"] ? parseFloat(d["Income Tax"]) : null,
+				intangibleAssets: d["Intangible Assets"] ? parseFloat(d["Intangible Assets"]) : null,
+				interestExpense: d["Interest Expense"] ? parseFloat(d["Interest Expense"]) : null,
+				inventory: d["Inventory"] ? parseFloat(d["Inventory"]) : null,
+				investments: d["Investments"] ? parseFloat(d["Investments"]) : null,
+				liabilities: d["Liabilities"] ? parseFloat(d["Liabilities"]) : null,
+				longTermDebt: d["Long-Term Debt"] ? parseFloat(d["Long-Term Debt"]) : null,
+				longTermInvestments: d["Long-Term Investments"] ? parseFloat(d["Long-Term Investments"]) : null,
+				minorityInterest: d["Minority Interest"] ? parseFloat(d["Minority Interest"]) : null,
+				miscStocks: d["Misc. Stocks"] ? parseFloat(d["Misc. Stocks"]) : null,
+				netBorrowings: d["Net Borrowings"] ? parseFloat(d["Net Borrowings"]) : null,
+				netCashFlow: d["Net Cash Flow"] ? parseFloat(d["Net Cash Flow"]) : null,
+				netCashFlowOperating: d["Net Cash Flow-Operating"] ? parseFloat(d["Net Cash Flow-Operating"]) : null,
+				netCashFlowsFinancing: d["Net Cash Flows-Financing"] ? parseFloat(d["Net Cash Flows-Financing"]) : null,
+				netCashFlowsInvesting: d["Net Cash Flows-Investing"] ? parseFloat(d["Net Cash Flows-Investing"]) : null,
+				netIncome: d["Net Income"] ? parseFloat(d["Net Income"]) : null,
+				netIncomeAdjustments: d["Net Income Adjustments"] ? parseFloat(d["Net Income Adjustments"]) : null,
+				netIncomeApplicableToCommonShareholders: d["Net Income Applicable to Common Shareholders"] ? parseFloat(d["Net Income Applicable to Common Shareholders"]) : null,
+				netIncomeContOperations: d["Net Income-Cont. Operations"] ? parseFloat(d["Net Income-Cont. Operations"]) : null,
+				netReceivables: d["Net Receivables"] ? parseFloat(d["Net Receivables"]) : null,
+				nonRecurringItems: d["Non-Recurring Items"] ? parseFloat(d["Non-Recurring Items"]) : null,
+				operatingIncome: d["Operating Income"] ? parseFloat(d["Operating Income"]) : null,
+				operatingMargin: d["Operating Margin"] ? parseFloat(d["Operating Margin"]) : null,
+				otherAssets: d["Other Assets"] ? parseFloat(d["Other Assets"]) : null,
+				otherCurrentAssets: d["Other Current Assets"] ? parseFloat(d["Other Current Assets"]) : null,
+				otherCurrentLiabilities: d["Other Current Liabilities"] ? parseFloat(d["Other Current Liabilities"]) : null,
+				otherEquity: d["Other Equity"] ? parseFloat(d["Other Equity"]) : null,
+				otherFinancingActivities: d["Other Financing Activities"] ? parseFloat(d["Other Financing Activities"]) : null,
+				otherInvestingActivities: d["Other Investing Activities"] ? parseFloat(d["Other Investing Activities"]) : null,
+				otherLiabilities: d["Other Liabilities"] ? parseFloat(d["Other Liabilities"]) : null,
+				otherOperatingActivities: d["Other Operating Activities"] ? parseFloat(d["Other Operating Activities"]) : null,
+				otherOperatingItems: d["Other Operating Items"] ? parseFloat(d["Other Operating Items"]) : null,
+				preTaxMargin: d["Pre-Tax Margin"] ? parseFloat(d["Pre-Tax Margin"]) : null,
+				preTaxROE: d["Pre-Tax ROE"] ? parseFloat(d["Pre-Tax ROE"]) : null,
+				profitMargin: d["Profit Margin"] ? parseFloat(d["Profit Margin"]) : null,
+				quickRatio: d["Quick Ratio"] ? parseFloat(d["Quick Ratio"]) : null,
+				researchAndDevelopment: d["Research and Development"] ? parseFloat(d["Research and Development"]) : null,
+				retainedEarnings: d["Retained Earnings"] ? parseFloat(d["Retained Earnings"]) : null,
+				saleAndPurchaseOfStock: d["Sale and Purchase of Stock"] ? parseFloat(d["Sale and Purchase of Stock"]) : null,
+				salesGeneralAndAdmin: d["Sales, General and Admin."] ? parseFloat(d["Sales, General and Admin."]) : null,
+				shortTermDebtCurrentPortionOfLongTermDebt: d["Short-Term Debt / Current Portion of Long-Term Debt"] ? parseFloat(d["Short-Term Debt / Current Portion of Long-Term Debt"]) : null,
+				shortTermInvestments: d["Short-Term Investments"] ? parseFloat(d["Short-Term Investments"]) : null,
+				totalAssets: d["Total Assets"] ? parseFloat(d["Total Assets"]) : null,
+				totalCurrentAssets: d["Total Current Assets"] ? parseFloat(d["Total Current Assets"]) : null,
+				totalCurrentLiabilities: d["Total Current Liabilities"] ? parseFloat(d["Total Current Liabilities"]) : null,
+				totalEquity: d["Total Equity"] ? parseFloat(d["Total Equity"]) : null,
+				totalLiabilities: d["Total Liabilities"] ? parseFloat(d["Total Liabilities"]) : null,
+				totalLiabilitiesAndEquity: d["Total Liabilities & Equity"] ? parseFloat(d["Total Liabilities & Equity"]) : null,
+				totalRevenue: d["Total Revenue"] ? parseFloat(d["Total Revenue"]) : null,
+				treasuryStock: d["Treasury Stock"] ? parseFloat(d["Treasury Stock"]) : null,
+				forYear: d["For Year"] ? new Date(startOfTheYearDate.setFullYear(parseFloat(d["For Year"]))) : d["Period Ending"] ? new Date(parseTime(d["Period Ending"])) : null,
+				earningsPerShare: d["Earnings Per Share"] ? parseFloat(d["Earnings Per Share"]) : null,
+				estimatedSharesOutstanding: d["Estimated Shares Outstanding"] ? parseFloat(d["Estimated Shares Outstanding"]) : null
 			};
 		}
 
-		d3.csv("fundamentals.csv", rowConverter,function(data){
-			console.log(data);
+
+		d3.csv("fundamentals.csv", rowConverter, function (fundamentalsData) {
+			data = fundamentalsData;
+
+			// Adding the company names to the select button
+			var nestedDataForSelectButton = d3.nest().key(function (d) { return d.tickerSymbol }).entries(data);
+			$.each(nestedDataForSelectButton, function (index, value) {
+				$('#tickerSymbolSelect').append($('<option/>', {
+					value: value.key,
+					text: value.key
+				}));
+			});
+
+			updateTable();
+			makeGraphs();
+
 		});
+
 
 	</script>
 
